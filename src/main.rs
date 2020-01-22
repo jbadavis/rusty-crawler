@@ -13,11 +13,10 @@ fn parse_links(doc: &str) -> Vec<String> {
     Html::parse_document(doc)
         .select(&Selector::parse("a").unwrap())
         .map(|elm| {
-            let href = elm.value().attr("href");
-
-            match href {
-                Some(url) => String::from(url),
-                None => String::new(),
+            if let Some(url) = elm.value().attr("href") {
+                String::from(url)
+            } else {
+                String::new()
             }
         })
         .filter(|s| s.starts_with("http"))
