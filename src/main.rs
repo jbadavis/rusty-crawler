@@ -38,19 +38,21 @@ async fn main() {
     println!("Starting at {:?}\n", links[0]);
 
     for _i in 0..3 {
-        let mut new_links: Vec<_> = vec![];
+        let mut links_to_crawl: Vec<_> = vec![];
 
         for link in links.iter() {
-            println!("Searching {:?}", link);
-
             let mut links_found: Vec<_> = get_links(&link).await;
 
-            println!("Found {:?} links\n", links_found.len());
+            println!(
+                "Searching {:?}...\nFound {:?} links\n",
+                link,
+                links_found.len()
+            );
 
-            new_links.append(&mut links_found);
+            links_to_crawl.append(&mut links_found);
         }
 
-        links = new_links;
+        links = links_to_crawl;
         link_store.append(&mut links.clone());
     }
 
