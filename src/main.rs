@@ -2,6 +2,7 @@ extern crate reqwest;
 extern crate scraper;
 
 use scraper::{Html, Selector};
+use std::time::Instant;
 
 async fn get_doc(url: &str) -> Result<String, Box<dyn std::error::Error>> {
     let doc = reqwest::get(url).await?.text().await?;
@@ -41,12 +42,14 @@ async fn main() {
         let mut links_to_crawl: Vec<_> = vec![];
 
         for link in links.iter() {
+            let now = Instant::now();
             let mut links_found: Vec<_> = get_links(&link).await;
 
             println!(
-                "Searching {:?}...\nFound {:?} links\n",
+                "Searching {:?}...\nFound {:?} links in {}ms\n",
                 link,
-                links_found.len()
+                links_found.len(),
+                now.elapsed().as_millis(),
             );
 
             links_to_crawl.append(&mut links_found);
