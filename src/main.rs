@@ -1,6 +1,7 @@
 extern crate reqwest;
 extern crate scraper;
 
+use futures::stream::StreamExt;
 use scraper::{Html, Selector};
 use std::time::Instant;
 
@@ -33,31 +34,31 @@ async fn get_links(link: &str) -> Vec<String> {
 
 #[tokio::main]
 async fn main() {
-    let mut links: Vec<_> = vec![String::from("http://jbadavis.github.io")];
-    let mut link_store = links.clone();
+    let mut links: Vec<_> = vec![String::from("https://jbadavis.github.io")];
+    let mut links_to_crawl: Vec<_> = links.clone();
 
-    println!("Starting at {:?}\n", links[0]);
+    println!("\nStarting from {}", links[0]);
 
-    for _i in 0..3 {
-        let mut links_to_crawl: Vec<_> = vec![];
+    loop {
+        let now = Instant::now();
 
-        for link in links.iter() {
-            let now = Instant::now();
-            let mut links_found: Vec<_> = get_links(&link).await;
+        let r = futures::stream::iter(
+            links_to_crawl
+                .iter()
+                .map(|link| async move { get_links(&link).await }),
+        )
+        .buffer_unordered(50)
+        .collect::<Vec<_>>()
+        .await;
 
-            println!(
-                "Searching {:?}...\nFound {:?} links in {}ms\n",
-                link,
-                links_found.len(),
-                now.elapsed().as_millis(),
-            );
+        links_to_crawl = r.iter().flatten().cloned().collect::<Vec<String>>();
+        links.append(&mut links_to_crawl.clone());
 
-            links_to_crawl.append(&mut links_found);
-        }
-
-        links = links_to_crawl;
-        link_store.append(&mut links.clone());
+        println!(
+            " - {} links found in {}ms\n   Total found {}\n",
+            links_to_crawl.len(),
+            now.elapsed().as_millis(),
+            links.len(),
+        );
     }
-
-    println!("{:?}", link_store.len());
 }
